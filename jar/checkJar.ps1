@@ -82,7 +82,7 @@ try {
     $smali = Join-Path $work "smali"
     if (-not (Test-Path -LiteralPath $smali)) { Fail "missing smali output" }
 
-    foreach ($path in @("androidx", "kotlin", "javax\xml\namespace", "org\slf4j", "org\xmlpull\v1")) {
+    foreach ($path in @("androidx", "kotlin", "javax\xml", "org\slf4j", "org\xmlpull\v1")) {
         if (Test-Path -LiteralPath (Join-Path $smali $path)) { Fail "unexpected packaged API: $path" }
     }
 
@@ -128,6 +128,8 @@ try {
         "javax/net/",
         "javax/security/",
         "javax/xml/namespace/",
+        "javax/xml/parsers/",
+        "javax/xml/xpath/",
         "okhttp3/",
         "okio/",
         "org/json/",
