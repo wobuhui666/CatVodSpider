@@ -9,6 +9,8 @@
 
 `ext.host` 可设置站点地址。Sorani 还可用 `ext.apiBase` 指定 API 根路径（默认使用同镜像 `/__upstream__/api.sorani.cc/sorani-cms`）。默认地址已写入配置，不需要填账号。
 
+Girigiri 进入源时最多并发读取 3 个分类筛选页面，保留每个分类自己的完整筛选。首页和分类 HTML 使用 60 秒、最多 12 页的内存缓存，默认分类第一页复用已读取的筛选页面；筛选参数和不同页码分别缓存。详情、播放票据不使用这个页面缓存，退出或重新初始化时清空并取消旧请求。
+
 Girigiri 的公开搜索建议接口不提供服务端分页，源取其声明的完整结果后本地切页；不把重复的 page/pg 响应冒充下一页。媒体请求带浏览器 User-Agent 和 Referer。Sorani 按网站 API 分页，播放时才取临时票据；遇到限流、登录要求、HTTP/JSON 错误会报错，不返回伪成功空列表，也不自动绕过镜像连接原站。
 
 使用仓库标准 `gradlew.bat spiderJar` 生成 `jar/custom_spider.jar` 与 MD5。Windows CI 同样执行完整 R8 与现有 checkJar 检查，产物作为 workflow artifact 提供。JAR 和本配置保持相对目录后可导入。
