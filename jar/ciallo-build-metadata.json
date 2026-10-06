@@ -14,9 +14,11 @@
     "exoMXdmDecodedAndControlledEpisodes": 2,
     "nativeWebViewDM84SniffedEpisodes": 2,
     "mpvMXdmDecoded": true,
-    "mpvSeek": "TV host fix pending integrated device verification",
+    "mpvSeek": "PASS with TV host 87f11d363 HLS preroll fix",
     "legacyGirigiri": "PASS",
     "legacySoraniLatestProbe": "NETWORK_CONNECT_TIMEOUT",
-    "allSourcesPlaybackPassed": false
+    "allSourcesPlaybackPassed": false,
+    "mpvMXdmDecodedAndControlledEpisodes": 2,
+    "exoDM84WebViewDecodedAndControlledEpisodes": 2
   }
 }

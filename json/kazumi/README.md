@@ -60,4 +60,4 @@
 
 最初 13 个候选在三星 Android 13 上通过旧 JarLoader ABI 和实际 BaseLoader 装载，9 个通过搜索、详情及前两集解析；dalvdm、mgnacg、mutefun 遇到验证码，xfdmneo 跳到旧站迁移门户，已从默认列表剔除。静态 HLS 源通过 App 实际本地代理、清单重写与 Range 206 验证。
 
-MXdm 的 Exo 双集真实硬解、首帧与画面、双向拖动、切集、音效开关、倍速和音量检查通过。MPV 能硬解；其 HLS 精确定位偏差由 TV App 另行修复，不把解码成功等同于所有控制通过。DM84 已通过 App 原生 WebView 的前两集嗅探；AGE、baimao、ezdmw、xfdmnext 当前嗅探超时，不能声称已经播放。动态页面的可用性依赖站点脚本和 App WebView，并不是共用 HTTP 反代能解决的全部问题。
+MXdm 的 Exo 双集真实硬解、首帧与画面、双向拖动、切集、音效开关、倍速和音量检查通过。TV App 的 HLS 预读修复后，MXdm 的 MPV 原严格双集播放、双向定位、切集、音效与倍速测试也全部通过。DM84 已完成 App 原生 WebView 嗅探后的 Exo 双集真实播放与控制检查；AGE、baimao、ezdmw、xfdmnext 当前嗅探超时，不能声称已经播放。动态页面的可用性依赖站点脚本和 App WebView，并不是共用 HTTP 反代能解决的全部问题。
