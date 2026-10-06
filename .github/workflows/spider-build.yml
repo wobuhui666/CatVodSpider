@@ -40,6 +40,8 @@ jobs:
       - name: Build and verify JAR
         shell: pwsh
         run: |
+          # CI already provisioned Java 21; avoid downloading a second vendor via stale URLs.
+          "toolchainVersion=21" | Set-Content -Encoding utf8 gradle/gradle-daemon-jvm.properties
           ./gradlew.bat -I "$env:RUNNER_TEMP/ciallo.init.gradle" spiderJar --no-daemon --max-workers=2
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $meta = @{ sourceCommit=$env:GITHUB_SHA; jarSha256=(Get-FileHash jar/custom_spider.jar -Algorithm SHA256).Hash.ToLower(); legacyClient=$true; appExecuted=$false }
