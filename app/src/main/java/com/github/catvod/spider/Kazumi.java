@@ -139,6 +139,7 @@ public class Kazumi extends Spider {
         String source = id.getString("source");
         Fetch fetch = fetch(rule.request(false, source), scope);
         List<KazumiRule.Road> roads = rule.chapters(fetch.body, source);
+        if (xfdmNext()) remember("xfdm-chapters:" + source, fetch.body, scope, 60_000);
         List<String> names = new ArrayList<>(); List<String> playlist = new ArrayList<>();
         for (KazumiRule.Road road : roads) {
             names.add(label(road.name)); List<String> entries = new ArrayList<>();
@@ -160,11 +161,83 @@ public class Kazumi extends Spider {
         ready(); JSONObject value = decode(id); String pageUrl = KazumiRule.url(value.getString("url"), rule.base);
         long scope = scope();
         if (media(pageUrl)) return player(pageUrl, value.optString("referer", rule.referer), false);
+        if (xfdmNext()) return xfdmPlayer(flag, pageUrl, scope);
         Fetch page = fetch(new KazumiRule.RequestSpec("GET", pageUrl, new JSONObject(), "none", null), scope);
         String direct = staticMedia(page.body, page.url);
         if (!direct.isEmpty()) return player(direct, page.url, false);
         // The old App already owns a WebView sniffer; do not navigate a raw proxy HTML URL.
         return player(page.url, rule.referer, true);
+    }
+
+    private boolean xfdmNext() {
+        HttpUrl base = HttpUrl.get(rule.base);
+        return base.isHttps() && base.port() == 443 && base.host().equals("next.xifanacg.com") && rule.api(false);
+    }
+
+    /** The site's browser calls this public API for a short-lived MP4 ticket. */
+    private String xfdmPlayer(String flag, String pageUrl, long scope) throws Exception {
+        HttpUrl page = HttpUrl.get(pageUrl);
+        Matcher path = Pattern.compile("^/anime/([1-9][0-9]*)/play/([1-9][0-9]*)/?$").matcher(page.encodedPath());
+        if (!page.isHttps() || page.port() != 443 || !page.host().equals("next.xifanacg.com") || !path.matches())
+            throw new IllegalArgumentException("xfdmnext 播放页地址无效");
+        long animeId = positiveId(path.group(1)), episodeId = positiveId(path.group(2));
+        KazumiRule.RequestSpec chapterRequest = rule.request(false, Long.toString(animeId));
+        HttpUrl api = HttpUrl.get(chapterRequest.url);
+        if (!api.isHttps() || api.port() != 443 || !api.host().equals("api.xifanacg.com")
+                || !api.encodedPath().equals("/rest/v1/rpc/get_anime_detail"))
+            throw new IllegalArgumentException("xfdmnext 章节接口地址无效");
+        String cacheKey = "xfdm-chapters:" + animeId;
+        String chapters = cached(cacheKey, scope);
+        if (chapters == null) {
+            chapters = fetch(chapterRequest, scope).body;
+            remember(cacheKey, chapters, scope, 60_000);
+        }
+        JSONObject detail = new JSONObject(chapters);
+        if (positiveId(detail.getJSONObject("anime").get("id")) != animeId)
+            throw new IllegalStateException("xfdmnext 章节影片不匹配");
+        long sourceId = 0;
+        JSONArray sources = detail.getJSONArray("sources");
+        for (int i = 0; i < sources.length(); i++) {
+            JSONObject source = sources.getJSONObject(i);
+            if (!label(source.optString("name")).equals(flag)) continue;
+            JSONArray episodes = source.getJSONArray("episodes");
+            for (int e = 0; e < episodes.length(); e++) {
+                if (positiveId(episodes.getJSONObject(e).get("id")) != episodeId) continue;
+                long selected = positiveId(source.get("id"));
+                if (sourceId != 0 && sourceId != selected) throw new IllegalStateException("xfdmnext 播放线路不明确");
+                sourceId = selected;
+            }
+        }
+        if (sourceId == 0) throw new IllegalStateException("xfdmnext 当前线路没有此剧集");
+        JSONObject headers = new JSONObject(chapterRequest.headers.toString())
+                .put("Origin", "https://next.xifanacg.com").put("Referer", pageUrl);
+        JSONObject body = new JSONObject().put("action", "fallback").put("episode_id", episodeId).put("source_id", sourceId);
+        String endpoint = api.newBuilder().encodedPath("/functions/v1/issue-web-playback").query(null).fragment(null).build().toString();
+        JSONObject response = new JSONObject(fetch(new KazumiRule.RequestSpec("POST", endpoint, headers, "json", body), scope).body);
+        if (!response.optBoolean("ok") || !response.optString("resolved_action").equals("fallback"))
+            throw new IllegalStateException("xfdmnext 播放接口未提供可用媒体");
+        if (positiveId(response.get("episode_id")) != episodeId || positiveId(response.get("expires_at")) <= System.currentTimeMillis() / 1000)
+            throw new IllegalStateException("xfdmnext 播放票据已过期或剧集不匹配");
+        JSONArray candidates = response.getJSONArray("candidates");
+        for (int i = 0; i < candidates.length(); i++) {
+            JSONObject candidate = candidates.getJSONObject(i);
+            if (positiveId(candidate.get("source_id")) != sourceId) continue;
+            String target = KazumiRule.url(candidate.getString("url"), "");
+            // The browser defines resolved_action=fallback as MP4 and rejects HLS candidates.
+            if (HttpUrl.get(target).encodedPath().toLowerCase(java.util.Locale.ROOT).endsWith(".m3u8"))
+                throw new IllegalStateException("xfdmnext 返回的媒体类型不匹配");
+            check(scope);
+            return new JSONObject(player(target, pageUrl, false)).put("format", "video/mp4").toString();
+        }
+        throw new IllegalStateException("xfdmnext 没有当前线路的播放候选");
+    }
+
+    private static long positiveId(Object value) {
+        String text = String.valueOf(value);
+        if (!text.matches("[1-9][0-9]{0,15}")) throw new IllegalArgumentException("xfdmnext ID或时间戳无效");
+        long id = Long.parseLong(text);
+        if (id > 9_007_199_254_740_991L) throw new IllegalArgumentException("xfdmnext ID超出范围");
+        return id;
     }
 
     private String player(String target, String referer, boolean sniff) throws Exception {
