@@ -2,7 +2,7 @@
 
 `csp_Kazumi` 使用旧版 `Spider.client()` 和 Java Spider 方法，同一份 JAR 可供旧版及增加新 SDK 的 FongMi TV 使用。没有改动已有 Girigiri、Sorani 源。
 
-这里固定保存上游 `Predidit/KazumiRules@fce5e15a2e6b57500912d41b3f1c65bb3eb7d392` 的 16 个有效规则，保留 MIT 许可。上游另外 70 个规则已标记 deprecated，不默认启用。`manifest.json` 记录来源和复用关系；Giri/Sorani 使用现有源，aafun 与 moonci 同站，保留较新的 moonci。因此 `sites.json` 提供 13 个新增独立源。
+这里固定保存上游 `Predidit/KazumiRules@fce5e15a2e6b57500912d41b3f1c65bb3eb7d392` 的 16 个有效规则，保留 MIT 许可。上游另外 70 个规则已标记 deprecated，不默认启用。`manifest.json` 记录来源和复用关系；Giri/Sorani 使用现有源，aafun 与 moonci 同站，保留较新的 moonci。三星实测还确认 xfdmneo 的旧 HTML 入口跳转到官方门户，旧版域名也转向 Next，因此不默认启用该旧入口；保留其原始快照和独立的 xfdmnext API 规则。`sites.json` 最终提供 12 个新增独立源。
 
 `sites.json` 是供合并的站点片段。发布时必须为这些条目指定包含 Kazumi 的共享 JAR；不要用它替换原配置的全局爬虫。
 
@@ -53,3 +53,11 @@
 本地真实 HTTP 服务的 31 项路由记忆检查通过，包括首次回退、后续跳过原线、到期、CF 失败回原线、全失败不记忆、取消、always/off 和容量限制。另 12 项媒体检查通过：HLS KEY/MAP/音轨/分片 URI、完整清单、Range 206 字节和取消中的流。线上通用 CF 入口的 206/128 字节检查，以及 MXdm 真实 HLS 获取和本地 URI 改写也通过；这仍不等于 Android 已完成解码。
 
 当前 mgnacg、mutefun 需要验证码，dalvdm 在直连及 CF 出口仍返回 403。baimao 部分搜索标题明确没有播放资源。其余站点的 Android WebView/实际解码结果以设备测试记录为准；主机接口检查不能证明设备播放成功。
+
+## Android 实测补充（2026-10-06）
+
+修复了 Android Harmony DOM 与 jsoup W3CDom 的 `Document.setUserData` 空指针：现在直接从 jsoup 节点构造保留父子与兄弟关系的 DOM，不解析外部 XML 实体。Windows `spiderJar` 构建与 JAR 检查通过。
+
+最初 13 个候选在三星 Android 13 上通过旧 JarLoader ABI 和实际 BaseLoader 装载，9 个通过搜索、详情及前两集解析；dalvdm、mgnacg、mutefun 遇到验证码，xfdmneo 跳到旧站迁移门户，已从默认列表剔除。静态 HLS 源通过 App 实际本地代理、清单重写与 Range 206 验证。
+
+MXdm 的 Exo 双集真实硬解、首帧与画面、双向拖动、切集、音效开关、倍速和音量检查通过。MPV 能硬解；其 HLS 精确定位偏差由 TV App 另行修复，不把解码成功等同于所有控制通过。DM84 已通过 App 原生 WebView 的前两集嗅探；AGE、baimao、ezdmw、xfdmnext 当前嗅探超时，不能声称已经播放。动态页面的可用性依赖站点脚本和 App WebView，并不是共用 HTTP 反代能解决的全部问题。

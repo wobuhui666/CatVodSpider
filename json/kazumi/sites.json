@@ -400,40 +400,6 @@
       }
     },
     {
-      "key": "Kazumi_xfdmneo",
-      "name": "Kazumi · xfdmneo · 搜索",
-      "type": 3,
-      "api": "csp_Kazumi",
-      "searchable": 1,
-      "quickSearch": 1,
-      "filterable": 0,
-      "ext": {
-        "rule": {
-          "api": "6",
-          "type": "anime",
-          "name": "xfdmneo",
-          "version": "1.1",
-          "muliSources": true,
-          "useWebview": true,
-          "useNativePlayer": true,
-          "usePost": false,
-          "useLegacyParser": true,
-          "adBlocker": false,
-          "userAgent": "",
-          "baseURL": "https://dm1.xfdm.pro/",
-          "searchURL": "https://dm1.xfdm.pro/search.html?wd=@keyword",
-          "searchList": "//div[@class='public-list-box search-box flex rel']",
-          "searchName": "//div[3]/div[1]/div[1]",
-          "searchResult": "//div[3]/div[2]/a[1]",
-          "chapterRoads": "//ul[@class='anthology-list-play size']",
-          "chapterResult": "//li/a",
-          "referer": ""
-        },
-        "proxyMode": "fallback",
-        "proxy": "https://proxy.ciallo0d000721.cc.cd/kazumi"
-      }
-    },
-    {
       "key": "Kazumi_xfdmnext",
       "name": "Kazumi · xfdmnext · 搜索",
       "type": 3,

@@ -1,19 +1,22 @@
 {
   "legacyClient": true,
-  "sourceCommit": "d70bae0758a8d3b8926f1d6cd98b8fcb82fe4808",
+  "sourceCommit": "103bf7671be0ac2d1c29e25e8808741d158fb680",
   "appExecuted": true,
-  "jarSha256": "018ebddcc1da3692c1013bbd0f2a6c775f3ed2bbdeeb62c5a6558fbd32720b95",
-  "workflowRun": "https://github.com/wobuhui666/CatVodSpider/actions/runs/37476066667",
+  "jarSha256": "56518c48f47e06cb2e284a49509fcc884d55277f15981b0674212582a16a52f8",
+  "workflowRun": "https://github.com/wobuhui666/CatVodSpider/actions/runs/37510680320",
   "validation": {
-    "device": "Samsung SM-F900F Android13",
-    "hostLegacySdkRegression": "PASS",
-    "androidCategoryCacheSearchDetailPlayer": "PASS",
-    "categories": 6,
-    "searchResults": 7,
-    "resolvedEpisodes": 2,
-    "homeFirstMs": 4559,
-    "homeRepeatMs": 9,
-    "defaultCategoryFirstMs": 23,
-    "scope": "Source loader and resolver validation; no new media decoding test in this run"
+    "device": "Samsung SM-F900F Android 13",
+    "candidateSources": 13,
+    "protocolPassed": 9,
+    "captchaLimited": 3,
+    "obsoletePortalRedirect": 1,
+    "defaultNewSources": 12,
+    "exoMXdmDecodedAndControlledEpisodes": 2,
+    "nativeWebViewDM84SniffedEpisodes": 2,
+    "mpvMXdmDecoded": true,
+    "mpvSeek": "TV host fix pending integrated device verification",
+    "legacyGirigiri": "PASS",
+    "legacySoraniLatestProbe": "NETWORK_CONNECT_TIMEOUT",
+    "allSourcesPlaybackPassed": false
   }
 }

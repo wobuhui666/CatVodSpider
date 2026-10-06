@@ -4,7 +4,7 @@
   "commit": "fce5e15a2e6b57500912d41b3f1c65bb3eb7d392",
   "license": "MIT",
   "activeRuleCount": 16,
-  "newSiteCount": 13,
+  "newSiteCount": 12,
   "deprecatedRuleCount": 70,
   "rules": [
     {
@@ -122,10 +122,11 @@
     {
       "name": "xfdmneo",
       "file": "rules/xfdmneo.json",
-      "enabled": true,
-      "reuse": null,
+      "enabled": false,
+      "reuse": "xfdmnext",
       "version": "1.1",
-      "api": "6"
+      "api": "6",
+      "disabledReason": "2026-10-06 Android: old HTML search redirects to the official xifan.moe portal; Next uses a different API and is configured separately."
     },
     {
       "name": "xfdmnext",
