@@ -22,7 +22,6 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -31,12 +30,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -57,6 +50,7 @@ public class Girigiri extends Spider {
     private volatile SearchResult cachedSearch;
     private final Set<Call> calls = new HashSet<>();
     private final Map<String, CatalogPage> catalog = new LinkedHashMap<>(16, 0.75f, true);
+    private final Map<String, String> observedFilters = new HashMap<>();
     private long generation;
     private boolean destroyed;
 
@@ -72,8 +66,6 @@ public class Girigiri extends Spider {
     private static final class RequestScope {
         final long generation;
         final String host;
-        final Set<Call> pending = new HashSet<>();
-        boolean cancelled;
         RequestScope(long generation, String host) {
             this.generation = generation;
             this.host = host;
@@ -105,6 +97,7 @@ public class Girigiri extends Spider {
             destroyed = false;
             cachedSearch = null;
             catalog.clear();
+            observedFilters.clear();
             pending = new ArrayList<>(calls);
             calls.clear();
         }
@@ -125,18 +118,9 @@ public class Girigiri extends Spider {
 
     private void checkScope(RequestScope scope) throws InterruptedIOException {
         synchronized (calls) {
-            if (destroyed || scope.cancelled || scope.generation != generation || Thread.currentThread().isInterrupted())
+            if (destroyed || scope.generation != generation || Thread.currentThread().isInterrupted())
                 throw new InterruptedIOException("Girigiri 已停止");
         }
-    }
-
-    private void cancel(RequestScope scope) {
-        List<Call> pending;
-        synchronized (calls) {
-            scope.cancelled = true;
-            pending = new ArrayList<>(scope.pending);
-        }
-        for (Call call : pending) call.cancel();
     }
 
     private String get(String path, RequestScope scope) throws Exception {
@@ -147,7 +131,6 @@ public class Girigiri extends Spider {
         synchronized (calls) {
             checkScope(scope);
             calls.add(call);
-            scope.pending.add(call);
         }
         try (Response response = call.execute()) {
             if (!response.isSuccessful()) throw new IllegalStateException("Girigiri HTTP " + response.code());
@@ -158,7 +141,6 @@ public class Girigiri extends Spider {
         } finally {
             synchronized (calls) {
                 calls.remove(call);
-                scope.pending.remove(call);
             }
         }
     }
@@ -171,6 +153,7 @@ public class Girigiri extends Spider {
             generation++;
             cachedSearch = null;
             catalog.clear();
+            observedFilters.clear();
             pending = new ArrayList<>(calls);
             calls.clear();
         }
@@ -196,6 +179,16 @@ public class Girigiri extends Spider {
             throw new IllegalStateException("Girigiri 要求驗證碼，請先在網站完成驗證");
         if (!doc.select("form[action*=login] input[type=password]").isEmpty())
             throw new IllegalStateException("Girigiri 要求登入");
+        if (key != null) {
+            if (path.equals("/")) {
+                if (cards(doc).length() == 0) throw new IllegalStateException("Girigiri 首頁列表解析失敗");
+            } else {
+                String[] parts = path.substring("/show/".length()).split("/", 2)[0].split("-", -1);
+                int page = parts.length > 8 && !parts[8].isEmpty() ? pageNumber(parts[8]) : 1;
+                filters(doc);
+                categoryResult(doc, page);
+            }
+        }
         synchronized (calls) {
             checkScope(scope);
             if (key != null) {
@@ -229,39 +222,33 @@ public class Girigiri extends Spider {
     }
 
     private JSONObject homeFilters(Map<String, String> names, Document first, RequestScope scope) throws Exception {
-        Map<String, JSONArray> loaded = new HashMap<>();
-        if (names.containsKey("2")) loaded.put("2", filters(first));
-        ExecutorService executor = Executors.newFixedThreadPool(3);
-        CompletionService<Map.Entry<String, JSONArray>> completed = new ExecutorCompletionService<>(executor);
-        List<Future<Map.Entry<String, JSONArray>>> pending = new ArrayList<>();
-        boolean success = false;
-        try {
-            for (String tid : names.keySet()) {
-                if (tid.equals("2")) continue;
-                checkScope(scope);
-                pending.add(completed.submit(() -> new AbstractMap.SimpleImmutableEntry<>(tid,
-                        filters(document("/show/" + tid + "-----------/", scope)))));
-            }
-            for (int i = 0; i < pending.size(); i++) {
-                Map.Entry<String, JSONArray> entry = completed.take().get();
-                loaded.put(entry.getKey(), entry.getValue());
-            }
+        JSONObject result = new JSONObject();
+        for (String tid : names.keySet()) {
             checkScope(scope);
-            JSONObject result = new JSONObject();
-            for (String tid : names.keySet()) result.put(tid, loaded.get(tid));
-            success = true;
-            return result;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new InterruptedIOException("Girigiri 已停止");
-        } catch (ExecutionException e) {
-            if (e.getCause() instanceof Exception) throw (Exception) e.getCause();
-            if (e.getCause() instanceof Error) throw (Error) e.getCause();
-            throw new IllegalStateException(e.getCause());
-        } finally {
-            if (!success) cancel(scope);
-            for (Future<?> future : pending) future.cancel(true);
-            executor.shutdownNow();
+            JSONArray options;
+            if (tid.equals("2")) {
+                options = filters(first);
+            } else {
+                String observed;
+                synchronized (calls) {
+                    checkScope(scope);
+                    observed = observedFilters.get(tid);
+                }
+                options = observed == null ? seedFilters(tid) : new JSONArray(observed);
+                if (options == null) {
+                    options = filters(document("/show/" + tid + "-----------/", scope));
+                    rememberFilters(tid, options, scope);
+                }
+            }
+            result.put(tid, options);
+        }
+        return result;
+    }
+
+    private void rememberFilters(String tid, JSONArray options, RequestScope scope) throws Exception {
+        synchronized (calls) {
+            checkScope(scope);
+            observedFilters.put(tid, options.toString());
         }
     }
 
@@ -277,10 +264,66 @@ public class Girigiri extends Spider {
             result.put(new JSONObject().put("key", key).put("name", row.select(".filter-text").text()).put("value", values));
         }
         if (result.length() == 0) throw new IllegalStateException("Girigiri 篩選結構已改變");
+        return withSort(result);
+    }
+
+    private JSONArray withSort(JSONArray result) throws Exception {
         JSONArray sort = new JSONArray();
         for (String[] item : new String[][]{{"最新", "time"}, {"最熱", "hits"}, {"評分", "score"}})
             sort.put(new JSONObject().put("n", item[0]).put("v", item[1]));
         return result.put(new JSONObject().put("key", "by").put("name", "排序").put("value", sort));
+    }
+
+    // Verified site definitions from 2026-10-06; opened category pages replace these in memory.
+    private JSONArray seedFilters(String tid) throws Exception {
+        String genres, languages = null, lastYear;
+        int newestYear;
+        switch (tid) {
+            case "3":
+                genres = "搞笑|爱情|恐怖|动作|科幻|剧情|战争|奇幻|冒险|悬疑|校园|后宫|热血|运动";
+                languages = "国语|英语";
+                newestYear = 2025;
+                lastYear = "2000至90年代";
+                break;
+            case "21":
+                genres = "喜剧|爱情|恐怖|动作|科幻|剧情|战争|奇幻|冒险|悬疑|校园|后宫|热血|运动|百合|耽美|机甲|日常|魔法少女|异世界|爱抖露|音乐";
+                languages = "日语|中文|英语";
+                newestYear = 2025;
+                lastYear = "2000至90年代";
+                break;
+            case "20":
+                genres = "喜剧|爱情|恐怖|动作|科幻|剧情|战争|奇幻|冒险|悬疑|校园|后宫|热血|运动|职场|百合|乙女|机甲|日常|魔法少女|异世界|爱抖露|音乐|萌|纪录片";
+                languages = "日语|英语|泰语";
+                newestYear = 2026;
+                lastYear = "2000-90年代";
+                break;
+            case "24":
+                genres = "喜剧|爱情|恐怖|动作|科幻|剧情|战争|奇幻|冒险|悬疑|校园|后宫|热血|运动|百合|乙女|机甲|日常|魔法少女|异世界|爱抖露|音乐";
+                newestYear = 2023;
+                lastYear = "2000";
+                break;
+            case "26":
+                genres = "演唱会|周边活动|其他";
+                newestYear = 2023;
+                lastYear = "2000";
+                break;
+            default:
+                return null;
+        }
+        JSONArray result = new JSONArray().put(seedFilter("class", "类型", genres))
+                .put(seedFilter("area", "季度", "一月|四月|七月|十月"));
+        StringBuilder years = new StringBuilder();
+        for (int year = newestYear; year >= 2001; year--) years.append(year).append('|');
+        result.put(seedFilter("year", "年份", years.append(lastYear).toString()));
+        if (languages != null) result.put(seedFilter("lang", "语言", languages));
+        return withSort(result);
+    }
+
+    private JSONObject seedFilter(String key, String name, String choices) throws Exception {
+        JSONArray values = new JSONArray().put(new JSONObject().put("n", "全部").put("v", ""));
+        for (String value : choices.split("\\|"))
+            values.put(new JSONObject().put("n", value).put("v", value));
+        return new JSONObject().put("key", key).put("name", name).put("value", values);
     }
 
     @Override
@@ -324,11 +367,18 @@ public class Girigiri extends Spider {
         for (int i = 0; i < keys.length; i++) parts[indexes[i]] = encode(extend == null ? "" : extend.getOrDefault(keys[i], ""));
         String path = "/show/" + String.join("-", parts) + "/";
         if (extend != null && !extend.getOrDefault("version", "").isEmpty()) path += "version/" + encode(extend.get("version")) + "/";
-        Document doc = document(path);
+        RequestScope scope = scope();
+        Document doc = document(path, scope);
+        JSONObject result = categoryResult(doc, page);
+        rememberFilters(tid, filters(doc), scope);
+        return result.toString();
+    }
+
+    private JSONObject categoryResult(Document doc, int page) throws Exception {
         JSONArray items = cards(doc);
         if (items.length() == 0) {
             if (doc.select(".null img[alt=空列表]").isEmpty()) throw new IllegalStateException("Girigiri 分類列表解析失敗");
-            return new JSONObject().put("list", items).put("page", page).put("pagecount", 0).put("limit", PAGE_SIZE).put("total", 0).toString();
+            return new JSONObject().put("list", items).put("page", page).put("pagecount", 0).put("limit", PAGE_SIZE).put("total", 0);
         }
         Matcher paging = PAGES.matcher(doc.select(".page-tip").text());
         if (!paging.find()) throw new IllegalStateException("Girigiri 分頁資料解析失敗");
@@ -336,7 +386,7 @@ public class Girigiri extends Spider {
         int current = Integer.parseInt(paging.group(2));
         int count = Integer.parseInt(paging.group(3));
         if (current != page || count < current || total < items.length()) throw new IllegalStateException("Girigiri 分頁資料不一致");
-        return new JSONObject().put("list", items).put("page", current).put("pagecount", count).put("limit", PAGE_SIZE).put("total", total).toString();
+        return new JSONObject().put("list", items).put("page", current).put("pagecount", count).put("limit", PAGE_SIZE).put("total", total);
     }
 
     @Override
