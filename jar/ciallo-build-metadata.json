@@ -1,15 +1,19 @@
 {
-  "sourceCommit": "f7af8e713236aa3ca6b22b1a3403851bdba09d7f",
-  "jarSha256": "dc0e5fcd5f95308a0a169fa31383e75bc213c38b5d9378138e13dacdd3f20ab4",
   "legacyClient": true,
-  "appExecuted": false,
-  "workflowRun": "https://github.com/wobuhui666/TV/actions/runs/37428099682",
-  "spiderSourceCommit": "4b980db92093d59488c242c93ddc722fcf248ae4",
-  "sourceTree": "eb3c1c4dd0029a1893bd2c2962a37867f4be820b",
+  "sourceCommit": "d70bae0758a8d3b8926f1d6cd98b8fcb82fe4808",
+  "appExecuted": true,
+  "jarSha256": "018ebddcc1da3692c1013bbd0f2a6c775f3ed2bbdeeb62c5a6558fbd32720b95",
+  "workflowRun": "https://github.com/wobuhui666/CatVodSpider/actions/runs/37476066667",
   "validation": {
-    "oldAppLoadedBoth": true,
-    "oldAppGirigiriExoEpisodes": 2,
-    "oldAppGirigiriMpvEpisodes": 2,
-    "deviceSorani": "TCP connect timeout before TLS; host API verified HTTP 200"
+    "device": "Samsung SM-F900F Android13",
+    "hostLegacySdkRegression": "PASS",
+    "androidCategoryCacheSearchDetailPlayer": "PASS",
+    "categories": 6,
+    "searchResults": 7,
+    "resolvedEpisodes": 2,
+    "homeFirstMs": 4559,
+    "homeRepeatMs": 9,
+    "defaultCategoryFirstMs": 23,
+    "scope": "Source loader and resolver validation; no new media decoding test in this run"
   }
 }
