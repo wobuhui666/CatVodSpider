@@ -1,0 +1,139 @@
+{
+  "schema": "tv.kazumi-rules.v1",
+  "upstream": "https://github.com/Predidit/KazumiRules",
+  "commit": "fce5e15a2e6b57500912d41b3f1c65bb3eb7d392",
+  "license": "MIT",
+  "activeRuleCount": 16,
+  "newSiteCount": 13,
+  "deprecatedRuleCount": 70,
+  "rules": [
+    {
+      "name": "7sefun",
+      "file": "rules/7sefun.json",
+      "enabled": true,
+      "reuse": null,
+      "version": "1.3",
+      "api": "4"
+    },
+    {
+      "name": "aafun",
+      "file": "rules/aafun.json",
+      "enabled": false,
+      "reuse": "moonci",
+      "version": "1.2",
+      "api": "4"
+    },
+    {
+      "name": "AGE",
+      "file": "rules/AGE.json",
+      "enabled": true,
+      "reuse": null,
+      "version": "1.5",
+      "api": "1"
+    },
+    {
+      "name": "akianime",
+      "file": "rules/akianime.json",
+      "enabled": true,
+      "reuse": null,
+      "version": "1.4",
+      "api": "4"
+    },
+    {
+      "name": "baimao",
+      "file": "rules/baimao.json",
+      "enabled": true,
+      "reuse": null,
+      "version": "1.0",
+      "api": "5"
+    },
+    {
+      "name": "dalvdm",
+      "file": "rules/dalvdm.json",
+      "enabled": true,
+      "reuse": null,
+      "version": "1.1",
+      "api": "8"
+    },
+    {
+      "name": "DM84",
+      "file": "rules/DM84.json",
+      "enabled": true,
+      "reuse": null,
+      "version": "1.4",
+      "api": "5"
+    },
+    {
+      "name": "ezdmw",
+      "file": "rules/ezdmw.json",
+      "enabled": true,
+      "reuse": null,
+      "version": "1.2",
+      "api": "8"
+    },
+    {
+      "name": "giriGiriLove",
+      "file": "rules/giriGiriLove.json",
+      "enabled": false,
+      "reuse": "Girigiri",
+      "version": "2.4",
+      "api": "6"
+    },
+    {
+      "name": "mgnacg",
+      "file": "rules/mgnacg.json",
+      "enabled": true,
+      "reuse": null,
+      "version": "1.0",
+      "api": "6"
+    },
+    {
+      "name": "moonci",
+      "file": "rules/moonci.json",
+      "enabled": true,
+      "reuse": null,
+      "version": "1.0",
+      "api": "8"
+    },
+    {
+      "name": "mutefun",
+      "file": "rules/mutefun.json",
+      "enabled": true,
+      "reuse": null,
+      "version": "1.2",
+      "api": "6"
+    },
+    {
+      "name": "MXdm",
+      "file": "rules/MXdm.json",
+      "enabled": true,
+      "reuse": null,
+      "version": "2.4",
+      "api": "5"
+    },
+    {
+      "name": "sorani",
+      "file": "rules/sorani.json",
+      "enabled": false,
+      "reuse": "Sorani",
+      "version": "1.0",
+      "api": "8"
+    },
+    {
+      "name": "xfdmneo",
+      "file": "rules/xfdmneo.json",
+      "enabled": true,
+      "reuse": null,
+      "version": "1.1",
+      "api": "6"
+    },
+    {
+      "name": "xfdmnext",
+      "file": "rules/xfdmnext.json",
+      "enabled": true,
+      "reuse": null,
+      "version": "1.1",
+      "api": "8"
+    }
+  ]
+}

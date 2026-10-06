@@ -1,0 +1,55 @@
+# Kazumi 旧接口适配
+
+`csp_Kazumi` 使用旧版 `Spider.client()` 和 Java Spider 方法，同一份 JAR 可供旧版及增加新 SDK 的 FongMi TV 使用。没有改动已有 Girigiri、Sorani 源。
+
+这里固定保存上游 `Predidit/KazumiRules@fce5e15a2e6b57500912d41b3f1c65bb3eb7d392` 的 16 个有效规则，保留 MIT 许可。上游另外 70 个规则已标记 deprecated，不默认启用。`manifest.json` 记录来源和复用关系；Giri/Sorani 使用现有源，aafun 与 moonci 同站，保留较新的 moonci。因此 `sites.json` 提供 13 个新增独立源。
+
+`sites.json` 是供合并的站点片段。发布时必须为这些条目指定包含 Kazumi 的共享 JAR；不要用它替换原配置的全局爬虫。
+
+## 配置
+
+```json
+{
+  "key": "Kazumi_moonci",
+  "name": "Kazumi · moonci",
+  "type": 3,
+  "api": "csp_Kazumi",
+  "searchable": 1,
+  "quickSearch": 1,
+  "filterable": 0,
+  "ext": {
+    "rule": { "...": "完整的上游规则对象" },
+    "proxy": "https://proxy.ciallo0d000721.cc.cd/kazumi",
+    "proxyMode": "fallback",
+    "mediaProxy": true
+  }
+}
+```
+
+默认内联 `rule`，打开源不会额外下载规则。也允许传固定版本的 HTTPS 规则 JSON URL。`proxyMode` 支持 `fallback`、`always`、`off`；`mediaProxy` 默认开启。
+
+规则本身只提供搜索、章节和播放页，没有首页、分类、筛选或通用翻页协议。请用全局搜索；第二页为空并明确返回 `page=2/pagecount=1`。不伪造推荐列表或分类。
+
+## 适配范围
+
+- XPath 列表、文本节点、相对上下文、多线路，以及 `self::` / `following-sibling::` / union。
+- API 8 的 GET/POST、JSON/form、规则标头、受限 JSONPath、嵌套和分隔字符串线路、响应变量及剧集页模板。
+- 原站 Cookie 隔离、已有 WebView Cookie、可取消网络、短期有界缓存。
+- 直链、MacCMS player JSON、Artplayer/DPlayer 配置、video/source 和 iframe 直链参数静态解析；其余返回旧接口 `parse=1` 给 App 自带 WebView。
+- 已取得的媒体可经旧版已存在的本地代理接口播放。HLS 的主清单、子清单、分片、KEY/MAP/音轨 URI 都改写；分片按原 Range 流式读取，不整片载入内存。本地媒体链接由当前源会话签名，不能任意替换目标网址。直接连接失败时尝试同一个 CF 入口；媒体 CDN 必须加入该入口允许清单。只有原线路失败且 CF 成功时才记住该媒体 origin 60 秒，后续分片直接走 CF；CF 失败即清除记忆并尝试原线路一次。路由记忆最多 32 项，换源或销毁时清空。
+
+直连元数据的连接/读取/整次上限为 2.5/6/10 秒，CF 代理为 5/10/15 秒。流式媒体保留 30 秒读取等待，不使用整段下载总时限。取消后不再自动回退。
+
+## 明确的边界
+
+验证码、403、无可播放章节及无法判定的空 HTML 会报错。CF 反代不会自动完成验证码。规则提供的 CAPTCHA 标记用于检测；交互验证仍需原站浏览器。规则中的 `adBlocker` 不会导致适配器自动删除 HLS discontinuity 分组，避免误删正片。
+
+通用 CF 入口只传输原始 HTTP 内容，不执行网页 JS，也不对整页 JS、CSS、资源、Cookie 做跨域重写。未能静态解析时，App WebView 仍打开原站播放页；原站不可达、复杂 blob 或站点定制脚本可能需要进一步适配。`parse=1` 只代表交给嗅探，不能视为已经播放成功。
+
+## 实际验证
+
+主机使用真实规则和真实搜索响应验证了 XPath/API 8；30 项无网协议检查通过，包括受限 JSONPath、模板类型与编码、XPath 上下文和线路格式。13 个新源均执行了真实搜索、详情以及可用的前两集解析，另把整条链强制经已部署 CF 入口复查。静态解析成功与需要 App WebView 的结果分别记录，没有把 HTTP 200 当成全部功能通过。
+
+本地真实 HTTP 服务的 31 项路由记忆检查通过，包括首次回退、后续跳过原线、到期、CF 失败回原线、全失败不记忆、取消、always/off 和容量限制。另 12 项媒体检查通过：HLS KEY/MAP/音轨/分片 URI、完整清单、Range 206 字节和取消中的流。线上通用 CF 入口的 206/128 字节检查，以及 MXdm 真实 HLS 获取和本地 URI 改写也通过；这仍不等于 Android 已完成解码。
+
+当前 mgnacg、mutefun 需要验证码，dalvdm 在直连及 CF 出口仍返回 403。baimao 部分搜索标题明确没有播放资源。其余站点的 Android WebView/实际解码结果以设备测试记录为准；主机接口检查不能证明设备播放成功。
