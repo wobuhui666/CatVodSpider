@@ -1,24 +1,21 @@
 {
   "legacyClient": true,
-  "sourceCommit": "103bf7671be0ac2d1c29e25e8808741d158fb680",
   "appExecuted": true,
-  "jarSha256": "56518c48f47e06cb2e284a49509fcc884d55277f15981b0674212582a16a52f8",
-  "workflowRun": "https://github.com/wobuhui666/CatVodSpider/actions/runs/37510680320",
+  "sourceCommit": "75ce558ad38e0b1e2c1038dc7bcb374c35289399",
+  "jarSha256": "e49765f62ac867b76f45108f36f10077a2b26c39c66cd3082ae03fe71cf08462",
+  "workflowRun": "https://github.com/wobuhui666/CatVodSpider/actions/runs/37535050083",
   "validation": {
     "device": "Samsung SM-F900F Android 13",
-    "candidateSources": 13,
-    "protocolPassed": 9,
-    "captchaLimited": 3,
-    "obsoletePortalRedirect": 1,
-    "defaultNewSources": 12,
-    "exoMXdmDecodedAndControlledEpisodes": 2,
-    "nativeWebViewDM84SniffedEpisodes": 2,
-    "mpvMXdmDecoded": true,
-    "mpvSeek": "PASS with TV host 87f11d363 HLS preroll fix",
-    "legacyGirigiri": "PASS",
-    "legacySoraniLatestProbe": "NETWORK_CONNECT_TIMEOUT",
+    "tvSourceCommit": "decc4857ab37296595414ba2402729b6028a4fc1",
+    "xfdmnextExoDecodedAndControlledEpisodes": 2,
+    "xfdmnextMpvDecodedAndControlledEpisodes": 2,
+    "productionResultAndPlaySpec": true,
+    "freshPlaybackTicketPerEpisode": true,
+    "forwardBackwardSeek": true,
+    "speedAndVolume": true,
+    "audioProcessing": true,
+    "cleanupPassed": true,
     "allSourcesPlaybackPassed": false,
-    "mpvMXdmDecodedAndControlledEpisodes": 2,
-    "exoDM84WebViewDecodedAndControlledEpisodes": 2
+    "scope": "Current JAR validated on xfdmnext; other site results belong to previous artifacts. External CAPTCHA and unavailable player limitations remain."
   }
 }
