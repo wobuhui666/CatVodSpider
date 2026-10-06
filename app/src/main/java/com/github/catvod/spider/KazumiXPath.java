@@ -1,13 +1,21 @@
 package com.github.catvod.spider;
 
 import org.jsoup.Jsoup;
-import org.jsoup.helper.W3CDom;
+import org.jsoup.nodes.Attribute;
+import org.jsoup.nodes.DataNode;
+import org.jsoup.nodes.Element;
+import org.jsoup.nodes.TextNode;
+import org.jsoup.select.NodeVisitor;
+import org.w3c.dom.Document;
+import org.w3c.dom.DOMException;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
@@ -18,7 +26,43 @@ final class KazumiXPath {
     private final XPath xpath = XPathFactory.newInstance().newXPath();
 
     KazumiXPath(String html) {
-        root = new W3CDom().namespaceAware(false).fromJsoup(Jsoup.parse(html));
+        // Android's Harmony DocumentImpl has no owner document. jsoup W3CDom calls
+        // Document.setUserData(), which crashes there even though desktop JAXP works.
+        // Build the same parent/sibling-preserving DOM without jsoup's source back-links.
+        // No XML text is parsed, so external entities and doctypes cannot be resolved.
+        try {
+            Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+            Jsoup.parse(html).child(0).traverse(new NodeVisitor() {
+                private Node parent = document;
+
+                @Override
+                public void head(org.jsoup.nodes.Node node, int depth) {
+                    if (node instanceof Element element) {
+                        org.w3c.dom.Element target;
+                        try { target = document.createElement(element.tagName()); }
+                        catch (DOMException invalidName) { target = document.createElement("span"); }
+                        for (Attribute attribute : element.attributes()) {
+                            try { target.setAttribute(attribute.getKey(), attribute.getValue()); }
+                            catch (DOMException invalidName) { /* HTML-only attributes, e.g. @click. */ }
+                        }
+                        parent.appendChild(target);
+                        parent = target;
+                    } else if (node instanceof TextNode text) {
+                        parent.appendChild(document.createTextNode(text.getWholeText()));
+                    } else if (node instanceof DataNode data) {
+                        parent.appendChild(document.createTextNode(data.getWholeData()));
+                    }
+                }
+
+                @Override
+                public void tail(org.jsoup.nodes.Node node, int depth) {
+                    if (node instanceof Element) parent = parent.getParentNode();
+                }
+            });
+            root = document;
+        } catch (ParserConfigurationException error) {
+            throw new IllegalStateException("Android DOM builder is unavailable", error);
+        }
     }
 
     List<Node> nodes(Node context, String expression) throws Exception {
